@@ -20,12 +20,22 @@ class Settings(BaseSettings):
     BREVO_SENDER_EMAIL: str = os.getenv("BREVO_SENDER_EMAIL", "noreply@seesnexus.com")
     BREVO_SENDER_NAME: str = os.getenv("BREVO_SENDER_NAME", "SEES Nexus")
     
+    _cors_origins_env = os.getenv("CORS_ORIGINS", "").strip()
+    _frontend_url = os.getenv("FRONTEND_URL", "").strip()
     CORS_ORIGINS: list[str] = [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        os.getenv("FRONTEND_URL", "")
+        origin.strip()
+        for origin in (
+            _cors_origins_env.split(",")
+            if _cors_origins_env
+            else [
+                "http://localhost:3000",
+                "http://127.0.0.1:3000",
+                "http://localhost:5173",
+                "http://127.0.0.1:5173",
+                _frontend_url or "*",
+            ]
+        )
+        if origin.strip()
     ]
 
     class Config:
