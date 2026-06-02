@@ -1,0 +1,40 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-sees-void text-white font-sans antialiased;
+  }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { @apply bg-sees-void; }
+  ::-webkit-scrollbar-thumb { @apply bg-sees-teal rounded-full; }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-gradient-card backdrop-blur-sees border border-sees-teal/20 rounded-2xl;
+  }
+  .sees-input {
+    @apply w-full bg-sees-forest/40 border border-sees-teal/30 rounded-xl px-4 py-3
+           text-white placeholder-white/30 focus:outline-none focus:border-sees-mint/60
+           focus:ring-1 focus:ring-sees-mint/30 transition-all duration-200;
+  }
+  .sees-btn-primary {
+    @apply bg-sees-mint text-sees-forest font-bold px-6 py-3 rounded-xl
+           hover:bg-sees-mint/90 active:scale-95 transition-all duration-200
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .sees-btn-secondary {
+    @apply border border-sees-mint/40 text-sees-mint font-semibold px-6 py-3 rounded-xl
+           hover:bg-sees-mint/10 active:scale-95 transition-all duration-200
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .sees-btn-danger {
+    @apply bg-red-500/20 border border-red-500/40 text-red-400 font-semibold px-6 py-3
+           rounded-xl hover:bg-red-500/30 active:scale-95 transition-all duration-200;
+  }
+}
+
