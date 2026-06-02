@@ -97,7 +97,29 @@ const ProjectsGallery = () => {
             <div className="absolute inset-0 z-0">
                 <Canvas
                     camera={{ position: [0, 0, 10], fov: 75 }}
-                    gl={{ antialias: true }}
+                    gl={{ antialias: true, powerPreference: 'high-performance' }}
+                    dpr={[1, 1.5]}
+                    onCreated={({ gl }) => {
+                        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+                        gl.setPixelRatio(dpr);
+                        // handle context loss/restored
+                        const canvas = gl.domElement;
+                        const onLost = (e: Event) => {
+                            e.preventDefault();
+                            console.warn('WebGL context lost');
+                        };
+                        const onRestore = () => {
+                            console.info('WebGL context restored — reloading');
+                            window.location.reload();
+                        };
+                        canvas.addEventListener('webglcontextlost', onLost, false);
+                        canvas.addEventListener('webglcontextrestored', onRestore, false);
+                        // store handlers on element to cleanup if needed
+                        // @ts-ignore
+                        canvas.__r3_onLost = onLost;
+                        // @ts-ignore
+                        canvas.__r3_onRestore = onRestore;
+                    }}
                 >
                     <ambientLight intensity={0.5} />
                     <pointLight
@@ -110,11 +132,11 @@ const ProjectsGallery = () => {
                         <Stars
                             radius={100}
                             depth={50}
-                            count={5000}
-                            factor={4}
+                            count={2000}
+                            factor={3}
                             saturation={0}
                             fade
-                            speed={1}
+                            speed={0.8}
                         />
                         <CircuitBackground />
 

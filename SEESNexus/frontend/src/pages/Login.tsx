@@ -17,7 +17,20 @@ import toast from "react-hot-toast";
 
 const LoginScene = () => {
     return (
-        <Canvas camera={{ position: [0, 0, 5], fov: 75 }}>
+        <Canvas
+            camera={{ position: [0, 0, 5], fov: 75 }}
+            gl={{ antialias: true, powerPreference: 'high-performance' }}
+            dpr={[1, 1.5]}
+            onCreated={({ gl }) => {
+                const dpr = Math.min(window.devicePixelRatio || 1, 2);
+                gl.setPixelRatio(dpr);
+                const canvas = gl.domElement;
+                const onLost = (e: Event) => e.preventDefault();
+                const onRestore = () => window.location.reload();
+                canvas.addEventListener('webglcontextlost', onLost, false);
+                canvas.addEventListener('webglcontextrestored', onRestore, false);
+            }}
+        >
             <ambientLight intensity={0.5} />
             <pointLight position={[10, 10, 10]} intensity={1} color="#A7FFEB" />
             <Float speed={2} rotationIntensity={1} floatIntensity={1}>

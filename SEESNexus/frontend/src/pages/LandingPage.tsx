@@ -48,7 +48,20 @@ const Landing = () => {
         <div className="relative min-h-screen bg-black text-white font-mono overflow-hidden">
             {/* 3D Canvas Background */}
             <div className="absolute inset-0 z-0">
-                <Canvas camera={{ position: [0, 0, 5], fov: 75 }}>
+                <Canvas
+                    camera={{ position: [0, 0, 5], fov: 75 }}
+                    gl={{ antialias: true, powerPreference: 'high-performance' }}
+                    dpr={[1, 1.5]}
+                    onCreated={({ gl }) => {
+                        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+                        gl.setPixelRatio(dpr);
+                        const canvas = gl.domElement;
+                        const onLost = (e: Event) => e.preventDefault();
+                        const onRestore = () => window.location.reload();
+                        canvas.addEventListener('webglcontextlost', onLost, false);
+                        canvas.addEventListener('webglcontextrestored', onRestore, false);
+                    }}
+                >
                     <Suspense fallback={null}>
                         <Scene />
                     </Suspense>
