@@ -1,44 +1,42 @@
-HELP.md
-target/
-.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
 
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
 
-### IntelliJ IDEA ###
-.idea
-*.iws
-*.iml
-*.ipr
-
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
+# Pip / build
+pip-wheel-metadata/
 build/
-!**/src/main/**/build/
-!**/src/test/**/build/
+dist/
+*.egg-info/
 
-### VS Code ###
-.vscode/
+# Pytest
+.pytest_cache/
 
-.env
-.env
+# Coverage and type checking
+.coverage
+coverage.xml
+htmlcov/
+.mypy_cache/
 
-
+# Local settings and secrets
 .env
 .env.*
-target/
-*.log
-.idea/
+secrets.json
+
+# Database files
+*.sqlite3
+*.db
+
+# IDEs and editors
 .vscode/
+.idea/
+
+# System files
+.DS_Store
+*.log
