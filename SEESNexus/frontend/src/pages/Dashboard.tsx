@@ -1,5 +1,5 @@
 import React from "react";
-import Sidebar from "../components/layout/Sidebar";
+import { Sidebar } from "../components/layout/Sidebar";
 import { GlassCard } from "../components/ui/GlassCard";
 import {
     Rocket,
