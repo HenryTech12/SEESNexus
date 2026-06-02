@@ -16,10 +16,13 @@ if not allowed_origins:
     # fallback to allowing all if no origins configured
     allowed_origins = ["*"]
 
+# If allowing all origins, browsers forbid Access-Control-Allow-Credentials: true
+allow_credentials_setting = False if "*" in allowed_origins else True
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
-    allow_credentials=True,
+    allow_credentials=allow_credentials_setting,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -40,7 +43,8 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         response.headers["Access-Control-Allow-Origin"] = origin
     elif "*" in allowed_origins:
         response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Credentials"] = "true"
+    # only allow credentials header when middleware is configured to allow credentials
+    response.headers["Access-Control-Allow-Credentials"] = "true" if allow_credentials_setting else "false"
     response.headers["Access-Control-Allow-Methods"] = "*"
     response.headers["Access-Control-Allow-Headers"] = "*"
         
@@ -63,7 +67,7 @@ async def global_exception_handler(request: Request, exc: Exception):
         response.headers["Access-Control-Allow-Origin"] = origin
     elif "*" in allowed_origins:
         response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Credentials"] = "true"
+    response.headers["Access-Control-Allow-Credentials"] = "true" if allow_credentials_setting else "false"
     response.headers["Access-Control-Allow-Methods"] = "*"
     response.headers["Access-Control-Allow-Headers"] = "*"
         
