@@ -11,9 +11,14 @@ app = FastAPI(
 )
 
 # CORS
+allowed_origins = [o for o in settings.CORS_ORIGINS if o]
+if not allowed_origins:
+    # fallback to allowing all if no origins configured
+    allowed_origins = ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -31,7 +36,10 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         }
     )
     origin = request.headers.get("origin")
-    response.headers["Access-Control-Allow-Origin"] = origin or "*"
+    if origin and origin in settings.CORS_ORIGINS:
+        response.headers["Access-Control-Allow-Origin"] = origin
+    elif "*" in allowed_origins:
+        response.headers["Access-Control-Allow-Origin"] = "*"
     response.headers["Access-Control-Allow-Credentials"] = "true"
     response.headers["Access-Control-Allow-Methods"] = "*"
     response.headers["Access-Control-Allow-Headers"] = "*"
@@ -51,7 +59,10 @@ async def global_exception_handler(request: Request, exc: Exception):
         }
     )
     origin = request.headers.get("origin")
-    response.headers["Access-Control-Allow-Origin"] = origin or "*"
+    if origin and origin in settings.CORS_ORIGINS:
+        response.headers["Access-Control-Allow-Origin"] = origin
+    elif "*" in allowed_origins:
+        response.headers["Access-Control-Allow-Origin"] = "*"
     response.headers["Access-Control-Allow-Credentials"] = "true"
     response.headers["Access-Control-Allow-Methods"] = "*"
     response.headers["Access-Control-Allow-Headers"] = "*"
