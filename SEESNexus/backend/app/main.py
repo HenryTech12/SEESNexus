@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Request, HTTPException
+import os
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
@@ -11,8 +12,13 @@ app = FastAPI(
 )
 
 # CORS
+# Allow wildcard via env var for quick testing (not recommended for production)
+allow_all_env = os.getenv("ALLOW_ALL_ORIGINS", "false").lower() in ("1", "true", "yes")
+
 allowed_origins = [o for o in settings.CORS_ORIGINS if o]
-if not allowed_origins:
+if allow_all_env:
+    allowed_origins = ["*"]
+elif not allowed_origins:
     # fallback to allowing all if no origins configured
     allowed_origins = ["*"]
 
