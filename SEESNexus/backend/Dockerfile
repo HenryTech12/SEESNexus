@@ -1,11 +1,7 @@
-FROM python:3.11-slim
+FROM python:3.11-slim AS builder
 
-# Install system dependencies
+# Install build dependencies (including Rust) to build wheels
 RUN apt-get update && apt-get install -y \
-    tesseract-ocr \
-    tesseract-ocr-eng \
-    poppler-utils \
-    libpq-dev \
     gcc \
     build-essential \
     python3-dev \
@@ -13,14 +9,36 @@ RUN apt-get update && apt-get install -y \
     cargo \
     pkg-config \
     libssl-dev \
+    libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-COPY requirements.txt .
+# Copy requirements and build wheels in a separate directory
+COPY requirements.txt ./
 RUN python -m pip install --upgrade pip setuptools wheel && \
-    pip install --no-cache-dir -r requirements.txt
+    pip wheel --no-cache-dir -r requirements.txt -w /wheels
 
+FROM python:3.11-slim
+
+# Runtime system dependencies (no Rust here)
+RUN apt-get update && apt-get install -y \
+    tesseract-ocr \
+    tesseract-ocr-eng \
+    poppler-utils \
+    libpq5 \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy built wheels from builder and install packages from them
+COPY --from=builder /wheels /wheels
+COPY requirements.txt ./
+RUN python -m pip install --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir --no-index --find-links /wheels -r requirements.txt
+
+# Copy app source
 COPY . .
 
 EXPOSE 8000
