@@ -7,7 +7,9 @@
         "dev": "vite",
         "build": "tsc && vite build",
         "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-        "preview": "vite preview"
+        "preview": "vite preview",
+        "test": "vitest run",
+        "test:watch": "vitest"
     },
     "overrides": {
         "react-qr-reader": {
@@ -20,6 +22,7 @@
         "@react-three/drei": "^9.106.0",
         "@react-three/fiber": "^8.16.8",
         "axios": "^1.7.2",
+        "dompurify": "^3.4.11",
         "framer-motion": "^11.2.10",
         "lucide-react": "^0.395.0",
         "qrcode.react": "^3.1.0",
@@ -28,6 +31,7 @@
         "react-hook-form": "^7.52.0",
         "react-hot-toast": "^2.4.1",
         "react-qr-reader": "^3.0.0-beta.1",
+        "react-quill": "^2.0.0",
         "react-router-dom": "^6.23.1",
         "recharts": "^2.12.7",
         "three": "^0.165.0",
@@ -35,6 +39,11 @@
         "zustand": "^4.5.2"
     },
     "devDependencies": {
+        "@tailwindcss/typography": "^0.5.20",
+        "@testing-library/jest-dom": "^6.9.1",
+        "@testing-library/react": "^16.3.2",
+        "@testing-library/user-event": "^14.6.1",
+        "@types/dompurify": "^3.0.5",
         "@types/node": "^20.14.2",
         "@types/react": "^18.3.3",
         "@types/react-dom": "^18.3.0",
@@ -46,9 +55,54 @@
         "eslint": "^8.57.0",
         "eslint-plugin-react-hooks": "^4.6.2",
         "eslint-plugin-react-refresh": "^0.4.7",
+        "jsdom": "^29.1.1",
         "postcss": "^8.4.38",
         "tailwindcss": "^3.4.4",
         "typescript": "^5.4.5",
-        "vite": "^5.2.12"
+        "vite": "^5.2.12",
+        "vitest": "^4.1.9"
+    },
+    "eslintConfig": {
+        "root": true,
+        "env": {
+            "browser": true,
+            "es2020": true,
+            "node": true
+        },
+        "extends": [
+            "eslint:recommended",
+            "plugin:@typescript-eslint/recommended",
+            "plugin:react-hooks/recommended"
+        ],
+        "ignorePatterns": [
+            "dist",
+            "node_modules"
+        ],
+        "parser": "@typescript-eslint/parser",
+        "parserOptions": {
+            "ecmaVersion": "latest",
+            "sourceType": "module",
+            "ecmaFeatures": {
+                "jsx": true
+            }
+        },
+        "plugins": [
+            "@typescript-eslint",
+            "react-refresh"
+        ],
+        "rules": {
+            "react-refresh/only-export-components": [
+                "warn",
+                {
+                    "allowConstantExport": true
+                }
+            ],
+            "@typescript-eslint/no-unused-vars": [
+                "warn",
+                {
+                    "argsIgnorePattern": "^_"
+                }
+            ]
+        }
     }
 }

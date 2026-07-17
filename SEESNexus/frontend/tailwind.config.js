@@ -27,8 +27,27 @@ module.exports = {
       backdropBlur: {
         'sees': '20px',
       },
+      keyframes: {
+        'marquee-left': {
+          '0%': { transform: 'translateX(0%)' },
+          '100%': { transform: 'translateX(-50%)' },
+        },
+        'marquee-right': {
+          '0%': { transform: 'translateX(-50%)' },
+          '100%': { transform: 'translateX(0%)' },
+        },
+        'wave-pulse': {
+          '0%, 100%': { transform: 'scaleY(1)' },
+          '50%': { transform: 'scaleY(1.35)' },
+        },
+      },
+      animation: {
+        'marquee-left': 'marquee-left 22s linear infinite',
+        'marquee-right': 'marquee-right 26s linear infinite',
+        'wave-pulse': 'wave-pulse 2.4s ease-in-out infinite',
+      },
     },
   },
-  plugins: [],
+  plugins: [require('@tailwindcss/typography')],
 }
 

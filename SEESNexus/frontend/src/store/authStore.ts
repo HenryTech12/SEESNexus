@@ -1,12 +1,13 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { User, UserRole } from "../types";
+import { User } from "../types";
 
 interface AuthState {
     user: User | null;
-    token: string | null;
     isAuthenticated: boolean;
-    setAuth: (user: User, token: string) => void;
+    // token intentionally omitted — axios reads sees_access_token from
+    // localStorage directly; storing it here too creates a stale-copy risk.
+    setAuth: (user: User) => void;
     logout: () => void;
     updateUser: (user: Partial<User>) => void;
 }
@@ -15,17 +16,18 @@ export const useAuthStore = create<AuthState>()(
     persist(
         (set) => ({
             user: null,
-            token: null,
             isAuthenticated: false,
-            setAuth: (user, token) =>
+            setAuth: (user) =>
                 set({
                     user,
-                    token,
                     isAuthenticated: true,
                 }),
             logout: () => {
-                set({ user: null, token: null, isAuthenticated: false });
+                set({ user: null, isAuthenticated: false });
                 localStorage.removeItem("sees_access_token");
+                // Refresh token must also be cleared so a logged-out session
+                // can't be silently revived via the axios refresh interceptor.
+                localStorage.removeItem("sees_refresh_token");
                 localStorage.removeItem("auth-storage");
             },
             updateUser: (updatedFields) =>

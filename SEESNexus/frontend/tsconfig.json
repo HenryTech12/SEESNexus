@@ -15,7 +15,7 @@
         "jsx": "react-jsx",
         "esModuleInterop": true,
         "allowSyntheticDefaultImports": true,
-        "types": ["vite/client"],
+        "types": ["vite/client", "@testing-library/jest-dom/vitest"],
 
         /* Linting */
         "strict": true,

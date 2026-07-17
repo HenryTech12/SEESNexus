@@ -1,0 +1,90 @@
+
+SEESNexus Frontend: Foundation Rebuild + Hardware Inspector + Articles
+Context
+The frontend (Vite + React + TS + Tailwind + Zustand + Framer Motion + R3F) has working pages but several gaps versus SEES-Nexus-Documentation.md and internal inconsistencies discovered during review:
+src/services/ was already staged (uncommitted git mv) into src/_legacy/services/*.js — the active tree has no typed service layer at all. Pages call api.get/post ad-hoc with shapes that drift from both types.ts and the real backend contracts.
+src/api/axios.ts lost the refresh-token interceptor that exists in src/_legacy/api/axios.js.
+Hardware.tsx uses a local HardwareItem type (total_quantity, ad-hoc status strings) that diverges from types.ts's Hardware, and calls POST /hardware/loans with {hardware_id, quantity, reason, return_date} — the real backend endpoint is POST /hardware/{id}/loan with {purpose, expected_return_date}.
+types.ts's HardwareLoan doesn't match the backend's LoanResponse shape, and there's no `Article` type at all despite a working /articles backend.
+Sidebar is w-72 (288px) but every page's <main> uses lg:ml-64 (256px) — a real 32px layout bug, present on every authenticated page.
+Sidebar links to /analytics, which has no route and no page.
+The Hardware Lab "Info" button is a dead no-op — the doc's "High-Precision Hardware Canvas" inspector panel was never built.
+No Articles page exists despite a working backend (/articles, tags, author info).
+Goal of this pass: fix the foundation issues above (so future feature work has a stable base), then ship two concrete features — a Hardware inspector panel and an Articles page — skinned in the existing terminal aesthetic (font-mono, ALL-CAPS, emerald/black) used by Hardware/Events/Profile/AdminPanel, to avoid introducing a third visual language. The "sees-mint glass" theme (Landing/Login/Register/Dashboard) is left untouched.
+User decisions already made:
+_legacy/ stays as a reference during the rebuild; final cleanup commit (removing _legacy/) happens once everything is ported and verified working.
+The dead /analytics Sidebar link is removed now (one line).
+A shared AppLayout is built and adopted across all authenticated pages in this pass, fixing the w-72/ml-64 mismatch everywhere at once.
+
+Part 1: Foundation Rebuild
+1.1 Typed services layer (src/services/)
+Recreate as .ts, porting logic from src/_legacy/services/*.js but fixing contracts against the real backend (confirmed via backend routers/schemas) and types.ts:
+`src/services/hardwareService.ts`
+getAll(params?: {page?, limit?, category?, status?}) → GET /hardware/, returns Hardware[] (matches backend HardwareResponse: id, name, description, serial_number, category, status, image_url, quantity, available_quantity, added_by_id, created_at, updated_at)
+getById(id) → GET /hardware/{id}
+requestLoan(id, {purpose, expected_return_date}) → POST /hardware/{id}/loan — this is the corrected contract; Hardware.tsx currently posts to the wrong endpoint with the wrong shape and must be fixed to match
+getMyLoans() → GET /hardware/loans/my, returns HardwareLoan[]
+`src/services/articleService.ts` (new)
+getAll(params?: {tag?, status?}) → GET /articles/, returns Article[]
+getBySlug(slug) → GET /articles/{slug} (or filter client-side if no single-item endpoint — verify during implementation)
+No tag/category-listing endpoint exists; derive the filter chip list client-side from the tags present in loaded articles.
+`src/services/authService.ts`, `eventService.ts`, `projectService.ts` — port as straightforward typed wrappers from _legacy, no contract changes identified yet; verify each endpoint against backend routers while porting (don't assume _legacy shapes are current).
+1.2 Type reconciliation (src/types.ts)
+`Hardware`: already close to backend; confirm/align field names exactly (it currently matches HardwareResponse reasonably well — id, name, description?, serial_number?, category, status, image_url?, quantity, available_quantity). Update Hardware.tsx's local HardwareItem interface usages to this type, renaming total_quantity → quantity and aligning status values to the backend's HardwareStatus enum (check exact enum values in backend schema during implementation).
+`HardwareLoan`: rewrite to match backend LoanResponse: { id, hardware_id, borrower_id, approved_by_id?, status, purpose, request_date, approval_date?, expected_return_date, actual_return_date?, hardware?, borrower? }. Drop the current user_id/quantity/return_date fields that don't exist on the backend.
+`Article` (new type): { id, slug, title, content, excerpt?, cover_image_url?, tags: string[], status: 'DRAFT' | 'PUBLISHED', author_id, author?: { id, full_name, profile_image_url? }, published_at?, created_at, updated_at }.
+1.3 Axios refresh-token interceptor (src/api/axios.ts)
+Port the isRefreshing / failedQueue / processQueue pattern from src/_legacy/api/axios.js, adapted to current conventions:
+Keep the existing sees_access_token localStorage key (don't rename — authStore.ts, Login.tsx, Register.tsx already depend on it).
+Add a new sees_refresh_token key (consistent naming) for the refresh token returned at login/register.
+On 401, call POST /auth/refresh with {refresh_token}, retry the queued request on success, and on failure fall back to the current behavior (clear tokens + redirect to /login).
+Base URL: keep import.meta.env.VITE_API_BASE_URL || "/api/v1" (current active convention) — the _legacy VITE_API_URL + prod-host fallback is superseded by the current proxy-based setup and not needed.
+1.4 src/mocks/ layer (formalize existing pattern)
+Create src/mocks/hardware.ts, src/mocks/events.ts, src/mocks/articles.ts, src/mocks/projects.ts — move the existing inline MOCK_PROJECTS/EVENT_DATA/HARDWARE_DATA arrays here, typed against types.ts. Pages keep their existing "try API, fall back to mock" pattern but import from this shared location instead of defining inline, so the inspector panel and Articles page can reuse the same mock data shape without duplicating it.
+1.5 AppLayout component + adoption (src/components/layout/AppLayout.tsx)
+New component:
+<div className="flex min-h-screen bg-... ">  <Sidebar />  <motion.main className="flex-1 lg:ml-72 p-8 relative" ...fade-in transition>    {children}  </motion.main></div>
+lg:ml-72 fixes the w-72 Sidebar vs lg:ml-64 main mismatch.
+Standardizes the motion.div page-transition wrapper (currently inconsistent: AdminPanel/QRScanner have it, Profile doesn't).
+Migrate all authenticated pages to use it: Dashboard.tsx, Profile.tsx, AdminPanel.tsx, QRScanner.tsx, Hardware.tsx, Events.tsx, plus the new Articles.tsx.
+`Projects.tsx` is excluded — it's an intentional full-screen 3D canvas experience without a sidebar (per doc's "Netflix-style rail" vision). Left as-is; noted as a known inconsistency for a future pass, not in scope here.
+1.6 Sidebar cleanup (src/components/layout/Sidebar.tsx)
+Remove the /analytics entry from adminItems (no matching route, no page, not in current doc scope).
+
+Part 2: Feature — Hardware Lab Inspector Panel
+Replaces the dead "Info" button in Hardware.tsx. Layout (matches doc's "High-Precision Hardware Canvas" concept, terminal-skinned):
+Top: existing stats row (kept as-is).
+Main: existing filterable grid, narrowed to make room for a right rail. Clicking an item (or its "Info" button) sets a selectedHardware state and opens the inspector rail.
+Right rail (inspector panel):
+Item details: name, image (image_url with fallback), description, category badge, status badge, available_quantity / quantity, serial number — all from services/hardwareService.getById or the already-loaded list item.
+Loan history: the backend has no per-item loan history endpoint (only GET /hardware/loans/my). The panel will instead show "YOUR LOAN STATUS" for this item by filtering the current user's loans (getMyLoans()) by hardware_id — shows if the current user already has a pending/active loan on this item. A full cross-user loan history is noted as a backend gap, not built.
+Request Loan form: purpose (textarea) + expected_return_date (date picker), submits via the corrected hardwareService.requestLoan(id, {...}). Disabled/hidden if available_quantity === 0 or the user already has a pending loan on this item.
+Responsive: on smaller screens the rail collapses to a slide-over panel (consistent with the existing mobile Sidebar pattern, if any — verify during implementation).
+Styling: reuse existing terminal classes from Hardware.tsx (font-mono, emerald borders, ALL-CAPS labels) — no new visual language.
+
+Part 3: Feature — Articles Page
+New src/pages/Articles.tsx + route /articles (added to App.tsx inside the AuthWrapper-protected block) + Sidebar nav entry (in navItems, terminal-icon consistent with Hardware/Events).
+List view: grid/list of articles from articleService.getAll(), each card showing title, excerpt, cover_image_url, author.full_name, tags, published_at.
+Tag filter chips: derived client-side from the unique tags across loaded articles (no backend tag-list endpoint).
+Detail view: modal (trimmed from the shared mockup) showing full content, author info, tags — opened on card click, closed via existing Modal/dialog pattern if one exists in components/ui/ (verify and reuse rather than building new).
+Mock fallback: src/mocks/articles.ts with a few sample articles typed as Article[], used if /articles fails (consistent with Hardware/Events/Projects pattern).
+Terminal-skinned, same as Hardware/Events.
+
+Part 4: _legacy/ and cleanup (end of pass)
+Do not commit the currently-staged rename yet.
+As each _legacy/services/*.js is ported to src/services/*.ts and verified, leave the legacy file untouched (reference only).
+Once all services are ported, the axios refresh logic restored, and Hardware/Articles features verified working end-to-end, do a final commit that removes src/_legacy/ entirely (the staged rename + deletions become one clean "remove dead code, rebuild services as TS" commit).
+
+Deferred (not in this pass)
+Events calendar/countdown/attendee-list widgets from the mockup (phase 2 polish, not in doc).
+Cross-user hardware loan history (needs new backend endpoint — out of scope, frontend-only).
+Projects.tsx sidebar/layout reconciliation (full-screen 3D canvas vs AppLayout).
+
+Verification
+npm run dev (or existing dev script) — confirm app boots, no TS errors.
+Use the existing localStorage dev-auth bypass to log in as ADMIN.
+Layout: visually confirm Sidebar/main alignment on Dashboard, Profile, AdminPanel, QRScanner, Hardware, Events, Articles — no gap/overlap at lg breakpoint.
+Hardware: open inspector panel for an item, confirm details render, submit a loan request (mock or real backend, depending on availability) and confirm the corrected POST /hardware/{id}/loan payload shape is sent (check Network tab).
+Articles: confirm list loads (real or mock), tag filter works, detail modal opens/closes.
+Auth: confirm sees_access_token flows still work for Login/Register; if backend is reachable, confirm a forced 401 triggers the refresh flow without breaking the session.
+tsc --noEmit (or npm run build) — confirm no type errors from the types.ts changes (HardwareLoan, new Article, Hardware field renames) across all consumers.
