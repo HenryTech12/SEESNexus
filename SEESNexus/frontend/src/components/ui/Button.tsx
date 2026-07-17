@@ -12,6 +12,7 @@ export const Button: React.FC<ButtonProps> = ({
     size = "md",
     isLoading,
     className = "",
+    disabled,
     ...props
 }) => {
     const baseStyles =
@@ -35,7 +36,7 @@ export const Button: React.FC<ButtonProps> = ({
     return (
         <button
             className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
-            disabled={isLoading}
+            disabled={isLoading || disabled}
             {...props}
         >
             {isLoading ? (

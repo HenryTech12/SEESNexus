@@ -4,7 +4,6 @@ import { GlassCard } from "../components/ui/GlassCard";
 import { Button } from "../components/ui/Button";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import axios from "axios";
 import api from "../api/axios";
 import { useAuthStore } from "../store/authStore";
 import { formatError } from "../utils/errorHelper";
@@ -35,7 +34,6 @@ export const Register = () => {
         "Electrical/Electronics Engineering"
     );
     const [level, setLevel] = useState("100L");
-    const [studentId, setStudentId] = useState("");
     const [isLoading, setIsLoading] = useState(false);
 
     const handleSendCode = async () => {
@@ -56,6 +54,14 @@ export const Register = () => {
     };
 
     const handleFinalize = async () => {
+        if (!fullName.trim() || !email.trim() || !password) {
+            toast.error("Full name, email, and password are required");
+            return;
+        }
+        if (!confirmCode.trim()) {
+            toast.error("Enter the verification code sent to your email");
+            return;
+        }
         if (!selectedRole) {
             toast.error("Please select a role");
             return;
@@ -64,12 +70,10 @@ export const Register = () => {
         setIsLoading(true);
         try {
             // 1. Verify code
-            await api.post(
-                `/notify/verify-code?email=${email}&code=${confirmCode}`
-            );
+            await api.post("/notify/verify-code", { email, code: confirmCode });
 
             // 2. Register user
-            const response = await api.post("/auth/register", {
+            await api.post("/auth/register", {
                 full_name: fullName,
                 email,
                 password,
@@ -78,7 +82,6 @@ export const Register = () => {
                 role: selectedRole,
             });
 
-            const data = response.data.data;
             toast.success("Registration complete!");
 
             // Auto login after registration
@@ -95,10 +98,13 @@ export const Register = () => {
                 }
             );
 
-            setAuth(loginRes.data.data.user, loginRes.data.data.access_token);
+            setAuth(loginRes.data.data.user);
             localStorage.setItem("sees_access_token", loginRes.data.data.access_token);
+            // Stored so the axios refresh interceptor can silently renew
+            // the access token once it expires.
+            localStorage.setItem("sees_refresh_token", loginRes.data.data.refresh_token);
             navigate("/dashboard");
-        } catch (error: any) {
+        } catch (error) {
             toast.error(formatError(error, "Registration failed"));
         } finally {
             setIsLoading(false);
@@ -166,7 +172,7 @@ export const Register = () => {
                                 exit={{ opacity: 0, x: -20 }}
                                 className="space-y-6"
                             >
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="col-span-2">
                                         <label className="block text-xs font-bold text-sees-mint uppercase tracking-widest mb-2">
                                             Full Name
@@ -247,7 +253,7 @@ export const Register = () => {
                                 exit={{ opacity: 0, x: -20 }}
                                 className="space-y-6"
                             >
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="col-span-2">
                                         <label className="block text-xs font-bold text-sees-mint uppercase tracking-widest mb-2">
                                             Department
@@ -269,7 +275,7 @@ export const Register = () => {
                                             <option>Systems Engineering</option>
                                         </select>
                                     </div>
-                                    <div className="col-span-1">
+                                    <div className="col-span-2">
                                         <label className="block text-xs font-bold text-sees-mint uppercase tracking-widest mb-2">
                                             Level
                                         </label>
@@ -287,20 +293,6 @@ export const Register = () => {
                                             <option>500L</option>
                                         </select>
                                     </div>
-                                    <div className="col-span-1">
-                                        <label className="block text-xs font-bold text-sees-mint uppercase tracking-widest mb-2">
-                                            Student ID
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={studentId}
-                                            onChange={(e) =>
-                                                setStudentId(e.target.value)
-                                            }
-                                            placeholder="200XXX"
-                                            className="w-full bg-sees-void/50 border border-sees-mint/20 rounded-lg px-4 py-3 text-white placeholder:text-white/20 focus:border-sees-mint outline-none transition-all"
-                                        />
-                                    </div>
                                 </div>
                             </motion.div>
                         )}
@@ -313,7 +305,7 @@ export const Register = () => {
                                 exit={{ opacity: 0, x: -20 }}
                                 className="space-y-6"
                             >
-                                <div className="grid grid-cols-3 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                     {["STUDENT", "CONTRIBUTOR", "ADMIN"].map(
                                         (role) => (
                                             <button

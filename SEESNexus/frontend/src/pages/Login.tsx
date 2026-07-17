@@ -58,6 +58,10 @@ export const Login = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!email.trim() || !password) {
+            toast.error("Email and password are required");
+            return;
+        }
         setIsLoading(true);
         try {
             const formData = new URLSearchParams();
@@ -70,12 +74,15 @@ export const Login = () => {
                 },
             });
 
-            const { access_token, user } = response.data.data;
-            setAuth(user, access_token);
+            const { access_token, refresh_token, user } = response.data.data;
+            setAuth(user);
             localStorage.setItem("sees_access_token", access_token);
+            // Stored so the axios refresh interceptor can silently renew
+            // the access token once it expires.
+            localStorage.setItem("sees_refresh_token", refresh_token);
             toast.success("Login successful!");
             navigate("/dashboard");
-        } catch (error: any) {
+        } catch (error) {
             toast.error(formatError(error, "Login failed"));
         } finally {
             setIsLoading(false);
@@ -118,7 +125,7 @@ export const Login = () => {
                     </div>
 
                     <GlassCard className="border-sees-mint/20">
-                        <form className="space-y-6" onSubmit={handleSubmit}>
+                        <form className="space-y-6" onSubmit={handleSubmit} noValidate>
                             <div>
                                 <label className="block text-xs font-bold text-sees-mint uppercase tracking-widest mb-2">
                                     Email Address
@@ -128,7 +135,6 @@ export const Login = () => {
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     placeholder="name@students.unilag.edu.ng"
-                                    required
                                     className="w-full bg-sees-void/50 border border-sees-mint/20 rounded-lg px-4 py-3 text-white placeholder:text-white/20 focus:border-sees-mint outline-none transition-all"
                                 />
                             </div>
@@ -138,19 +144,21 @@ export const Login = () => {
                                     <label className="block text-xs font-bold text-sees-mint uppercase tracking-widest">
                                         Password
                                     </label>
-                                    <a
-                                        href="#"
-                                        className="text-xs text-sees-mustard hover:underline"
+                                    {/* No password-reset endpoint exists yet — disabled rather than
+                                        linking to a dead "#" or a flow that isn't built. */}
+                                    <span
+                                        aria-disabled="true"
+                                        title="Password reset isn't available yet"
+                                        className="text-xs text-sees-mustard/40 cursor-not-allowed select-none"
                                     >
                                         Forgot password?
-                                    </a>
+                                    </span>
                                 </div>
                                 <input
                                     type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="••••••••"
-                                    required
                                     className="w-full bg-sees-void/50 border border-sees-mint/20 rounded-lg px-4 py-3 text-white placeholder:text-white/20 focus:border-sees-mint outline-none transition-all"
                                 />
                             </div>
